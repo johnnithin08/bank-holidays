@@ -26,6 +26,7 @@ const Home = () => {
               <Pressable style={[styles.card]}>
                 <View style={styles.cardTopRow}>
                   <Text>{item.title}</Text>
+                  <Text>{item.date}</Text>
                 </View>
               </Pressable>
             );
