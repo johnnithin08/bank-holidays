@@ -16,7 +16,7 @@ const Edit = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { loading, upcomingHolidays, updateEdits } =
     useContext(HolidaysContext);
-  const { addToCalendar, saving: savingCalendar } = useAddToCalendar();
+  const { addToCalendar } = useAddToCalendar();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [title, setTitle] = useState<string>("");
 
@@ -175,7 +175,7 @@ const Edit = () => {
               variant="solid"
               className="h-[56px] rounded-[22px] bg-info-800 gap-3"
               onPress={onAddToCalendar}
-              isDisabled={disabled || savingCalendar}
+              isDisabled={disabled}
             >
               <IconSymbol name="plus" size={24} color="white" />
               <ButtonText className="text-white text-xl font-extrabold">
