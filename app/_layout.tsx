@@ -9,6 +9,10 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import "@/global.css";
+import { HolidaysProvider } from "@/providers/HolidaysProvider";
+
 export const unstable_settings = {
   anchor: "(tabs)",
 };
@@ -17,11 +21,15 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName="home" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="home" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GluestackUIProvider mode="light">
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <HolidaysProvider>
+          <Stack initialRouteName="home" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="home" />
+          </Stack>
+          <StatusBar style="auto" />
+        </HolidaysProvider>
+      </ThemeProvider>
+    </GluestackUIProvider>
   );
 }

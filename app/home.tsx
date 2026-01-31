@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useHolidays } from "@/hooks/useHolidays";
+import { HolidaysContext } from "@/providers/HolidaysProvider";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Home = () => {
-  const { upcomingHolidays } = useHolidays();
+  const { upcomingHolidays } = useContext(HolidaysContext);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -23,7 +24,12 @@ const Home = () => {
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
             return (
-              <Pressable style={[styles.card]}>
+              <Pressable
+                style={[styles.card]}
+                onPress={() => {
+                  router.push({ pathname: "/edit", params: { id: item.id } });
+                }}
+              >
                 <View style={styles.cardTopRow}>
                   <Text>{item.title}</Text>
                   <Text>{item.date}</Text>

@@ -1,14 +1,37 @@
 import { formatHolidays } from "@/utils/formatHolidays";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-export const useHolidays = () => {
+type HolidaysContextValue = {
+  error: boolean;
+  loading: boolean;
+  refetch: () => Promise<void>;
+  upcomingHolidays: Holiday[];
+};
+
+const initialData: HolidaysContextValue = {
+  error: false,
+  loading: false,
+  refetch: () => Promise.resolve(),
+  upcomingHolidays: [],
+};
+
+export const HolidaysContext = createContext<HolidaysContextValue>(initialData);
+
+export const HolidaysProvider = ({ children }: PropsWithChildren) => {
   const [serverData, setServerData] = useState<Holiday[]>([]);
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const fetchHolidays = async () => {
+  const fetchHolidays = async (): Promise<void> => {
     try {
+      setError(false);
       setLoading(true);
       const res = await fetch("https://www.gov.uk/bank-holidays.json", {
         headers: { Accept: "application/json" },
@@ -22,10 +45,11 @@ export const useHolidays = () => {
         throw new Error("Invalid bank holidays feed");
       }
       const formattedData = formatHolidays(json);
-      setLoading(false);
       setServerData(formattedData);
     } catch (err) {
       setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,10 +72,18 @@ export const useHolidays = () => {
     return filtered.slice(0, 5);
   }, [serverData]);
 
-  return {
-    loading,
-    error,
-    serverData,
-    upcomingHolidays,
-  };
+  const value = useMemo<HolidaysContextValue>(() => {
+    return {
+      error,
+      loading,
+      refetch: fetchHolidays,
+      upcomingHolidays,
+    };
+  }, [loading, error, upcomingHolidays]);
+
+  return (
+    <HolidaysContext.Provider value={value}>
+      {children}
+    </HolidaysContext.Provider>
+  );
 };
