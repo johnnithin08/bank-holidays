@@ -1,3 +1,4 @@
+import { DatePicker } from "@/components/date-picker";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -6,12 +7,13 @@ import { Text } from "@/components/ui/text";
 import dayjs from "@/lib/dayjs";
 import { HolidaysContext } from "@/providers/HolidaysProvider";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Edit = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { loading, error, upcomingHolidays } = useContext(HolidaysContext);
+  const { loading, upcomingHolidays } = useContext(HolidaysContext);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const holiday = useMemo(() => {
     if (!id) return null;
@@ -19,16 +21,24 @@ const Edit = () => {
     return match ?? null;
   }, [id, upcomingHolidays]);
 
+  useEffect(() => {
+    if (!holiday) {
+      setSelectedDate(null);
+      return;
+    }
+    const d = dayjs(holiday.date, "YYYY-MM-DD", true);
+    setSelectedDate(d.isValid() ? d.toDate() : null);
+  }, [holiday]);
+
   const dateInfo = useMemo(() => {
-    if (!holiday) return null;
-    const d = dayjs.utc(holiday.date, "YYYY-MM-DD", true);
-    if (!d.isValid()) return null;
+    if (!selectedDate) return null;
+    const d = dayjs(selectedDate);
     return {
       month: d.format("MMM").toUpperCase(),
       day: d.format("DD"),
       full: d.format("dddd, MMMM D, YYYY"),
     };
-  }, [holiday]);
+  }, [selectedDate]);
 
   return (
     <SafeAreaView className="flex-1">
@@ -84,11 +94,11 @@ const Edit = () => {
             <Input
               variant="outline"
               size="xl"
-              className="bg-background-0 border-2 border-outline-200 rounded-xl px-2 py-6"
+              className="bg-background-0 border-2 border-outline-200 rounded-xl"
             >
               <InputField
                 value={holiday?.title ?? ""}
-                className="text-typography-900 text-[18px] font-bold"
+                className="text-typography-900 text-lg font-bold my-2"
               />
             </Input>
           </Box>
@@ -97,24 +107,18 @@ const Edit = () => {
             <Text size="md" weight="extrabold" className="text-typography-500">
               DATE
             </Text>
-            <Input
-              variant="outline"
-              size="xl"
-              className="bg-background-0 border-2 border-outline-200 rounded-xl px-2 py-6"
-            >
-              <InputField
-                value={dateInfo?.full ?? ""}
-                editable={false}
-                className="text-typography-900 text-[18px] font-bold"
-              />
-            </Input>
+            <DatePicker
+              value={selectedDate ?? new Date()}
+              handleSelect={(next) => setSelectedDate(next)}
+              disabled={loading || !holiday}
+            />
           </Box>
 
           <Box className="mt-auto pb-4 gap-3">
             <Button
               action="primary"
               variant="solid"
-              className="h-[74px] rounded-[22px] bg-info-800 gap-3"
+              className="h-[56px] rounded-[22px] bg-info-800 gap-3"
               onPress={() => {}} // Will be added later
             >
               <IconSymbol name="plus" size={24} color="white" />
