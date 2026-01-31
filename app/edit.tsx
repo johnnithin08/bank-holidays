@@ -1,4 +1,6 @@
+import { ConfirmModal } from "@/components/confirm-modal";
 import { DatePicker } from "@/components/date-picker";
+import { MonthDayCard } from "@/components/month-day-card";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -19,6 +21,7 @@ const Edit = () => {
   const { addToCalendar } = useAddToCalendar();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [title, setTitle] = useState<string>("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const holiday = useMemo(() => {
     if (!id) return null;
@@ -36,16 +39,6 @@ const Edit = () => {
     setTitle(holiday.title);
   }, [holiday]);
 
-  const dateInfo = useMemo(() => {
-    if (!selectedDate) return null;
-    const d = dayjs(selectedDate);
-    return {
-      month: d.format("MMM").toUpperCase(),
-      day: d.format("DD"),
-      full: d.format("dddd, MMMM D, YYYY"),
-    };
-  }, [selectedDate]);
-
   const handleSave = () => {
     if (!holiday) return;
     if (!selectedDate) return;
@@ -59,21 +52,20 @@ const Edit = () => {
   };
 
   const disabled = !selectedDate || !title.trim();
+  const hasChanges = useMemo(() => {
+    if (!holiday) return false;
+    if (!selectedDate) return false;
+    const nextTitle = title.trim();
+    const nextDate = dayjs(selectedDate).format("YYYY-MM-DD");
+    return nextTitle !== holiday.title || nextDate !== holiday.date;
+  }, [holiday, selectedDate, title]);
 
   const onAddToCalendar = async () => {
     if (!holiday || !selectedDate) return;
 
-    const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
-    if (holiday.title !== title || holiday.date !== formattedDate)
-      updateEdits({
-        date: formattedDate,
-        id: holiday.id,
-        title,
-      });
-
     const res = await addToCalendar({
       title: title.trim(),
-      date: selectedDate,
+      date: dayjs(holiday.date).toDate(),
     });
     if (!res.ok) {
       Alert.alert("Couldn't save to Calendar");
@@ -86,7 +78,7 @@ const Edit = () => {
   return (
     <SafeAreaView className="flex-1">
       <Box className="flex-1 bg-background-50">
-        <Box className="bg-background-950 px-[18px] pt-[10px] pb-[16px] gap-[14px]">
+        <Box className="bg-background-950 px-[18px] pt-[10px] pb-[20px] gap-[14px]">
           <Button
             variant="link"
             action="secondary"
@@ -113,17 +105,7 @@ const Edit = () => {
 
         <Box className="flex-1 px-6 pt-8">
           <Box className="items-center mb-6">
-            <Box className="w-[140px] h-[140px] rounded-[28px] bg-success-500 items-center justify-center shadow-lg">
-              <Text size="xl" weight="extrabold" className="text-typography-0">
-                {dateInfo?.month ?? "—"}
-              </Text>
-              <Text
-                weight="black"
-                className="text-typography-0 text-[56px] mt-0.5"
-              >
-                {dateInfo?.day ?? "—"}
-              </Text>
-            </Box>
+            <MonthDayCard date={selectedDate} size="large" />
           </Box>
 
           <Box className="gap-3 mb-6">
@@ -157,14 +139,13 @@ const Edit = () => {
               disabled={loading || !holiday}
             />
           </Box>
-
           <Box className="mt-auto pb-4 gap-3">
             <Button
               action="primary"
               variant="solid"
               className="h-[56px] rounded-[22px] bg-background-950 gap-3"
-              onPress={handleSave}
-              isDisabled={disabled}
+              onPress={() => setConfirmOpen(true)}
+              isDisabled={disabled || !hasChanges}
             >
               <ButtonText className="text-white text-xl font-extrabold">
                 Save Changes
@@ -192,6 +173,17 @@ const Edit = () => {
           </Box>
         </Box>
       </Box>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Save changes?"
+        description="This will update the holiday title and date for this session."
+        confirmText="Save"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          handleSave();
+        }}
+      />
     </SafeAreaView>
   );
 };
