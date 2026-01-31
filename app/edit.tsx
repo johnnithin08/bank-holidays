@@ -1,4 +1,5 @@
 import { DatePicker } from "@/components/date-picker";
+import { MonthDayCard } from "@/components/month-day-card";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -36,16 +37,6 @@ const Edit = () => {
     setTitle(holiday.title);
   }, [holiday]);
 
-  const dateInfo = useMemo(() => {
-    if (!selectedDate) return null;
-    const d = dayjs(selectedDate);
-    return {
-      month: d.format("MMM").toUpperCase(),
-      day: d.format("DD"),
-      full: d.format("dddd, MMMM D, YYYY"),
-    };
-  }, [selectedDate]);
-
   const handleSave = () => {
     if (!holiday) return;
     if (!selectedDate) return;
@@ -63,17 +54,9 @@ const Edit = () => {
   const onAddToCalendar = async () => {
     if (!holiday || !selectedDate) return;
 
-    const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
-    if (holiday.title !== title || holiday.date !== formattedDate)
-      updateEdits({
-        date: formattedDate,
-        id: holiday.id,
-        title,
-      });
-
     const res = await addToCalendar({
       title: title.trim(),
-      date: selectedDate,
+      date: dayjs(holiday.date).toDate(),
     });
     if (!res.ok) {
       Alert.alert("Couldn't save to Calendar");
@@ -86,7 +69,7 @@ const Edit = () => {
   return (
     <SafeAreaView className="flex-1">
       <Box className="flex-1 bg-background-50">
-        <Box className="bg-background-950 px-[18px] pt-[10px] pb-[16px] gap-[14px]">
+        <Box className="bg-background-950 px-[18px] pt-[10px] pb-[20px] gap-[14px]">
           <Button
             variant="link"
             action="secondary"
@@ -113,17 +96,7 @@ const Edit = () => {
 
         <Box className="flex-1 px-6 pt-8">
           <Box className="items-center mb-6">
-            <Box className="w-[140px] h-[140px] rounded-[28px] bg-success-500 items-center justify-center shadow-lg">
-              <Text size="xl" weight="extrabold" className="text-typography-0">
-                {dateInfo?.month ?? "—"}
-              </Text>
-              <Text
-                weight="black"
-                className="text-typography-0 text-[56px] mt-0.5"
-              >
-                {dateInfo?.day ?? "—"}
-              </Text>
-            </Box>
+            <MonthDayCard date={selectedDate} size="large" />
           </Box>
 
           <Box className="gap-3 mb-6">
@@ -157,7 +130,6 @@ const Edit = () => {
               disabled={loading || !holiday}
             />
           </Box>
-
           <Box className="mt-auto pb-4 gap-3">
             <Button
               action="primary"
