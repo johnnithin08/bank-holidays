@@ -4,16 +4,19 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Input, InputField } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { useAddToCalendar } from "@/hooks/useAddToCalendar";
 import dayjs from "@/lib/dayjs";
 import { HolidaysContext } from "@/providers/HolidaysProvider";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Edit = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { loading, upcomingHolidays, updateEdits } =
     useContext(HolidaysContext);
+  const { addToCalendar } = useAddToCalendar();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [title, setTitle] = useState<string>("");
 
@@ -44,17 +47,41 @@ const Edit = () => {
   }, [selectedDate]);
 
   const handleSave = () => {
-    if (holiday)
-      updateEdits({
-        date: dayjs(selectedDate).format("YYYY-MM-DD"),
-        id: holiday.id,
-        title: title,
-      });
+    if (!holiday) return;
+    if (!selectedDate) return;
+    updateEdits({
+      date: dayjs(selectedDate).format("YYYY-MM-DD"),
+      id: holiday.id,
+      title: title.trim(),
+    });
     if (router.canGoBack()) router.back();
     else router.navigate("/home");
   };
 
-  const disabled = !selectedDate || !title;
+  const disabled = !selectedDate || !title.trim();
+
+  const onAddToCalendar = async () => {
+    if (!holiday || !selectedDate) return;
+
+    const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
+    if (holiday.title !== title || holiday.date !== formattedDate)
+      updateEdits({
+        date: formattedDate,
+        id: holiday.id,
+        title,
+      });
+
+    const res = await addToCalendar({
+      title: title.trim(),
+      date: selectedDate,
+    });
+    if (!res.ok) {
+      Alert.alert("Couldn't save to Calendar");
+      return;
+    }
+
+    Alert.alert("Saved to Calendar", "Added to your device calendar.");
+  };
 
   return (
     <SafeAreaView className="flex-1">
@@ -147,7 +174,8 @@ const Edit = () => {
               action="primary"
               variant="solid"
               className="h-[56px] rounded-[22px] bg-info-800 gap-3"
-              onPress={() => {}} // Will be added later
+              onPress={onAddToCalendar}
+              isDisabled={disabled}
             >
               <IconSymbol name="plus" size={24} color="white" />
               <ButtonText className="text-white text-xl font-extrabold">
