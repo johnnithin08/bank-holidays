@@ -1,3 +1,4 @@
+import { ConfirmModal } from "@/components/confirm-modal";
 import { DatePicker } from "@/components/date-picker";
 import { MonthDayCard } from "@/components/month-day-card";
 import { Box } from "@/components/ui/box";
@@ -20,6 +21,7 @@ const Edit = () => {
   const { addToCalendar } = useAddToCalendar();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [title, setTitle] = useState<string>("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const holiday = useMemo(() => {
     if (!id) return null;
@@ -50,6 +52,13 @@ const Edit = () => {
   };
 
   const disabled = !selectedDate || !title.trim();
+  const hasChanges = useMemo(() => {
+    if (!holiday) return false;
+    if (!selectedDate) return false;
+    const nextTitle = title.trim();
+    const nextDate = dayjs(selectedDate).format("YYYY-MM-DD");
+    return nextTitle !== holiday.title || nextDate !== holiday.date;
+  }, [holiday, selectedDate, title]);
 
   const onAddToCalendar = async () => {
     if (!holiday || !selectedDate) return;
@@ -135,8 +144,8 @@ const Edit = () => {
               action="primary"
               variant="solid"
               className="h-[56px] rounded-[22px] bg-background-950 gap-3"
-              onPress={handleSave}
-              isDisabled={disabled}
+              onPress={() => setConfirmOpen(true)}
+              isDisabled={disabled || !hasChanges}
             >
               <ButtonText className="text-white text-xl font-extrabold">
                 Save Changes
@@ -164,6 +173,17 @@ const Edit = () => {
           </Box>
         </Box>
       </Box>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Save changes?"
+        description="This will update the holiday title and date for this session."
+        confirmText="Save"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          handleSave();
+        }}
+      />
     </SafeAreaView>
   );
 };
