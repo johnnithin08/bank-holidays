@@ -12,8 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const Edit = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { loading, upcomingHolidays } = useContext(HolidaysContext);
+  const { loading, upcomingHolidays, updateEdits } =
+    useContext(HolidaysContext);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [title, setTitle] = useState<string>("");
 
   const holiday = useMemo(() => {
     if (!id) return null;
@@ -28,6 +30,7 @@ const Edit = () => {
     }
     const d = dayjs(holiday.date, "YYYY-MM-DD", true);
     setSelectedDate(d.isValid() ? d.toDate() : null);
+    setTitle(holiday.title);
   }, [holiday]);
 
   const dateInfo = useMemo(() => {
@@ -39,6 +42,19 @@ const Edit = () => {
       full: d.format("dddd, MMMM D, YYYY"),
     };
   }, [selectedDate]);
+
+  const handleSave = () => {
+    if (holiday)
+      updateEdits({
+        date: dayjs(selectedDate).format("YYYY-MM-DD"),
+        id: holiday.id,
+        title: title,
+      });
+    if (router.canGoBack()) router.back();
+    else router.navigate("/home");
+  };
+
+  const disabled = !selectedDate || !title;
 
   return (
     <SafeAreaView className="flex-1">
@@ -97,8 +113,9 @@ const Edit = () => {
               className="bg-background-0 border-2 border-outline-200 rounded-xl"
             >
               <InputField
-                value={holiday?.title ?? ""}
+                value={title}
                 className="text-typography-900 text-lg font-bold my-2"
+                onChangeText={setTitle}
               />
             </Input>
           </Box>
@@ -118,11 +135,22 @@ const Edit = () => {
             <Button
               action="primary"
               variant="solid"
+              className="h-[56px] rounded-[22px] bg-background-950 gap-3"
+              onPress={handleSave}
+              isDisabled={disabled}
+            >
+              <ButtonText className="text-white text-xl font-extrabold">
+                Save Changes
+              </ButtonText>
+            </Button>
+            <Button
+              action="primary"
+              variant="solid"
               className="h-[56px] rounded-[22px] bg-info-800 gap-3"
               onPress={() => {}} // Will be added later
             >
               <IconSymbol name="plus" size={24} color="white" />
-              <ButtonText className="text-white text-2xl font-extrabold">
+              <ButtonText className="text-white text-xl font-extrabold">
                 Add to Calendar
               </ButtonText>
             </Button>
