@@ -147,6 +147,7 @@ const Edit = () => {
               className="h-[56px] rounded-[22px] bg-background-950 gap-3"
               onPress={() => setConfirmOpen(true)}
               isDisabled={disabled || !hasChanges}
+              testID="saveChangesButton"
             >
               <ButtonText className="text-white text-xl font-extrabold">
                 Save Changes
@@ -158,6 +159,7 @@ const Edit = () => {
               className="h-[56px] rounded-[22px] bg-info-800 gap-3"
               onPress={onAddToCalendar}
               isDisabled={hasChanges}
+              testID="addToCalendarButton"
             >
               <IconSymbol name="calendar" size={22} color="white" />
               <ButtonText className="text-white text-xl font-extrabold">

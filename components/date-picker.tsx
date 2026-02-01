@@ -81,6 +81,7 @@ export function DatePicker({
           minimumDate={minimumDate}
           maximumDate={maximumDate}
           onChange={handleChange}
+          testID="dateTimePicker"
         />
       )}
 
@@ -136,6 +137,7 @@ export function DatePicker({
                   minimumDate={minimumDate}
                   maximumDate={maximumDate}
                   onChange={handleChange}
+                  testID="dateTimePicker"
                 />
               </Box>
             </Pressable>

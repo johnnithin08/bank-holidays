@@ -31,6 +31,7 @@ export const HolidayRow = ({
     >
       <Pressable
         className="p-4 bg-white rounded-xl flex-row gap-4"
+        testID={`holidayRow-${item.id}`}
         onPress={() => {
           router.push({ pathname: "/edit", params: { id: item.id } });
         }}
