@@ -3,6 +3,7 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import React from "react";
 import { Modal, Pressable } from "react-native";
+import Animated, { ZoomIn } from "react-native-reanimated";
 
 export type ConfirmModalProps = {
   open: boolean;
@@ -13,6 +14,8 @@ export type ConfirmModalProps = {
   onConfirm: () => void;
   onCancel: () => void;
 };
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function ConfirmModal({
   open,
@@ -27,14 +30,15 @@ export function ConfirmModal({
     <Modal
       visible={open}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onCancel}
     >
       <Pressable
         className="flex-1 bg-black/50 px-5 justify-center"
         onPress={onCancel}
       >
-        <Pressable
+        <AnimatedPressable
+          entering={ZoomIn.springify()}
           className="bg-background-0 rounded-2xl border border-outline-200 overflow-hidden"
           onPress={(e) => e.stopPropagation()}
         >
@@ -67,7 +71,7 @@ export function ConfirmModal({
               <ButtonText className="font-extrabold">{confirmText}</ButtonText>
             </Button>
           </Box>
-        </Pressable>
+        </AnimatedPressable>
       </Pressable>
     </Modal>
   );

@@ -80,7 +80,6 @@ export const HolidaysProvider = ({ children }: PropsWithChildren) => {
       }
 
       const json = (await res.json()) as GovUkFeed;
-      console.log("json", json);
       if (!json || typeof json !== "object") {
         throw new Error("Invalid bank holidays feed");
       }
@@ -103,11 +102,9 @@ export const HolidaysProvider = ({ children }: PropsWithChildren) => {
     let shouldFetch = true;
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      console.log("raw", raw);
       if (raw) {
         try {
           const parsed = JSON.parse(raw) as CachePayload;
-          console.log("parsed", parsed);
           const cacheTime = dayjs(parsed.cachedAt);
           // Fetch only if cached data is from a previous day.
           shouldFetch = cacheTime.isValid()
