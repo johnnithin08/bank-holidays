@@ -1,8 +1,10 @@
+import dayjs from "@/lib/dayjs";
 import { formatHolidays } from "@/utils/formatHolidays";
-import dayjs from "dayjs";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   PropsWithChildren,
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -26,7 +28,39 @@ const initialData: HolidaysContextValue = {
   upcomingHolidays: [],
 };
 
+type CachePayload = {
+  cachedAt: string;
+  upcoming: Holiday[];
+  edits: Record<string, Holiday>;
+};
+
 export const HolidaysContext = createContext<HolidaysContextValue>(initialData);
+
+const STORAGE_KEY = "bank-holidays";
+
+const computeUpcoming = (
+  serverData: Holiday[],
+  edits: Record<string, Holiday>
+): Holiday[] => {
+  const start = dayjs.utc().startOf("day");
+  const end = start.add(6, "month");
+
+  const effective = serverData.map((h) => edits[h.id] ?? h);
+
+  const filtered = effective.filter((h) => {
+    const d = dayjs.utc(h.date, "YYYY-MM-DD", true);
+    if (!d.isValid()) return false;
+    const t = d.valueOf();
+    return t >= start.valueOf() && t <= end.valueOf();
+  });
+
+  filtered.sort((a, b) => a.date.localeCompare(b.date));
+  return filtered.slice(0, 5);
+};
+
+const persistCache = async (payload: CachePayload) => {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+};
 
 export const HolidaysProvider = ({ children }: PropsWithChildren) => {
   const [serverData, setServerData] = useState<Holiday[]>([]);
@@ -34,7 +68,7 @@ export const HolidaysProvider = ({ children }: PropsWithChildren) => {
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const fetchHolidays = async (): Promise<void> => {
+  const fetchHolidays = useCallback(async (): Promise<void> => {
     try {
       setError(false);
       setLoading(true);
@@ -46,46 +80,76 @@ export const HolidaysProvider = ({ children }: PropsWithChildren) => {
       }
 
       const json = (await res.json()) as GovUkFeed;
+      console.log("json", json);
       if (!json || typeof json !== "object") {
         throw new Error("Invalid bank holidays feed");
       }
       const formattedData = formatHolidays(json);
+      const cachedAt = dayjs().toISOString();
       setServerData(formattedData);
+      persistCache({
+        cachedAt,
+        upcoming: computeUpcoming(formattedData, edits),
+        edits,
+      });
     } catch (err) {
       setError(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [edits]);
 
-  useEffect(() => {
-    fetchHolidays();
-  }, []);
+  const cachedRefresh = useCallback(async () => {
+    let shouldFetch = true;
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      console.log("raw", raw);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as CachePayload;
+          console.log("parsed", parsed);
+          const cacheTime = dayjs(parsed.cachedAt);
+          // Fetch only if cached data is from a previous day.
+          shouldFetch = cacheTime.isValid()
+            ? cacheTime.isBefore(dayjs(), "day")
+            : true;
+          setServerData(parsed.upcoming);
+          setEdits(parsed.edits);
+        } catch {
+          shouldFetch = true;
+        }
+      }
+    } finally {
+      if (shouldFetch) await fetchHolidays();
+    }
+  }, [fetchHolidays]);
 
-  const updateEdits = (updated: Holiday) => {
-    setEdits((prev) => ({
-      ...prev,
-      [updated.id]: updated,
-    }));
-  };
+  const updateEdits = useCallback(
+    (updated: Holiday) => {
+      setEdits((prev) => {
+        const next = {
+          ...prev,
+          [updated.id]: updated,
+        };
+        persistCache({
+          cachedAt: dayjs().toISOString(),
+          upcoming: computeUpcoming(serverData, next),
+          edits: next,
+        });
+
+        return next;
+      });
+    },
+    [serverData]
+  );
 
   const upcomingHolidays = useMemo(() => {
-    const start = dayjs.utc().startOf("day");
-    const end = start.add(6, "month");
-
-    const filtered = serverData.filter((h) => {
-      const d = dayjs.utc(h.date, "YYYY-MM-DD", true);
-      if (!d.isValid()) return false;
-      const t = d.valueOf();
-      return t >= start.valueOf() && t <= end.valueOf();
-    });
-
-    filtered.sort((a, b) => a.date.localeCompare(b.date));
-    return filtered.slice(0, 5).map((eachDate) => {
-      const editedDate = edits[eachDate.id];
-      return editedDate ? editedDate : eachDate;
-    });
+    return computeUpcoming(serverData, edits);
   }, [serverData, edits]);
+
+  useEffect(() => {
+    cachedRefresh();
+  }, []);
 
   const value = useMemo<HolidaysContextValue>(() => {
     return {
@@ -96,7 +160,7 @@ export const HolidaysProvider = ({ children }: PropsWithChildren) => {
       upcomingHolidays,
       updateEdits,
     };
-  }, [loading, error, upcomingHolidays, edits]);
+  }, [loading, error, upcomingHolidays, edits, fetchHolidays, updateEdits]);
 
   return (
     <HolidaysContext.Provider value={value}>
