@@ -1,6 +1,6 @@
 import { Text } from "@/components/ui/text";
-import React, { useContext } from "react";
-import { FlatList, Pressable, View } from "react-native";
+import React, { useCallback, useContext, useState } from "react";
+import { FlatList, Pressable, RefreshControl, View } from "react-native";
 
 import { MonthDayCard } from "@/components/month-day-card";
 import { Box } from "@/components/ui/box";
@@ -11,7 +11,17 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Home = () => {
-  const { upcomingHolidays } = useContext(HolidaysContext);
+  const { upcomingHolidays, refetch } = useContext(HolidaysContext);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   return (
     <SafeAreaView className="flex-1">
@@ -37,6 +47,9 @@ const Home = () => {
         contentContainerClassName="gap-4"
         data={upcomingHolidays}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         renderItem={({ item }) => {
           return (
             <Pressable
