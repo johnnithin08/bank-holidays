@@ -6,7 +6,7 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Input, InputField } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
-import { useAddToCalendar } from "@/hooks/useAddToCalendar";
+import { useCalendar } from "@/hooks/useCalendar";
 import dayjs from "@/lib/dayjs";
 import { HolidaysContext } from "@/providers/HolidaysProvider";
 import { router, useLocalSearchParams } from "expo-router";
@@ -16,9 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const Edit = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { loading, upcomingHolidays, updateEdits } =
+  const { loading, upcomingHolidays, updateEdits, edits } =
     useContext(HolidaysContext);
-  const { addToCalendar } = useAddToCalendar();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [title, setTitle] = useState<string>("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -28,6 +27,10 @@ const Edit = () => {
     const match = upcomingHolidays.find((h) => h.id === id);
     return match ?? null;
   }, [id, upcomingHolidays]);
+  const { addToCalendar, exists: existsInCalendar } = useCalendar(
+    holiday,
+    edits
+  );
 
   useEffect(() => {
     if (!holiday) {
@@ -47,8 +50,6 @@ const Edit = () => {
       id: holiday.id,
       title: title.trim(),
     });
-    if (router.canGoBack()) router.back();
-    else router.navigate("/home");
   };
 
   const disabled = !selectedDate || !title.trim();
@@ -65,7 +66,7 @@ const Edit = () => {
 
     const res = await addToCalendar({
       title: title.trim(),
-      date: dayjs(holiday.date).toDate(),
+      date: selectedDate,
     });
     if (!res.ok) {
       Alert.alert("Couldn't save to Calendar");
@@ -156,12 +157,21 @@ const Edit = () => {
               variant="solid"
               className="h-[56px] rounded-[22px] bg-info-800 gap-3"
               onPress={onAddToCalendar}
-              isDisabled={disabled}
+              isDisabled={hasChanges}
             >
-              <IconSymbol name="plus" size={24} color="white" />
+              <IconSymbol name="calendar" size={22} color="white" />
               <ButtonText className="text-white text-xl font-extrabold">
                 Add to Calendar
               </ButtonText>
+              {existsInCalendar && !hasChanges ? (
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={24}
+                  color="white"
+                />
+              ) : (
+                <IconSymbol name="plus" size={20} color="white" />
+              )}
             </Button>
             <Text
               size="md"
