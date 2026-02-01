@@ -26,3 +26,13 @@ yarn start
 ```bash
 yarn test
 ```
+
+## Demo
+
+https://github.com/user-attachments/assets/b4179a20-c59b-4e7c-bd5b-ff000eacafac
+
+## Test Coverage
+
+<img width="867" height="615" alt="Screenshot 2026-02-01 at 20 18 01" src="https://github.com/user-attachments/assets/69d5dbe9-3343-447f-a927-1dbe278e9899" />
+
+
