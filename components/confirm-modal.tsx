@@ -38,7 +38,7 @@ export function ConfirmModal({
         onPress={onCancel}
       >
         <AnimatedPressable
-          entering={ZoomIn.springify()}
+          entering={ZoomIn.springify().duration(400)}
           className="bg-background-0 rounded-2xl border border-outline-200 overflow-hidden"
           onPress={(e) => e.stopPropagation()}
         >
